@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yapay Zeka Yol Haritası</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.14);
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --teal: #00d9a0;
+    --teal-dim: rgba(0,217,160,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+    --coral: #fb7185;
+    --coral-dim: rgba(251,113,133,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 56px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--teal);
+    border: 1px solid rgba(0,217,160,0.3);
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--teal), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  /* Overall progress */
+  .overall-progress {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 48px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+
+  .progress-circle-wrap {
+    flex-shrink: 0;
+  }
+
+  .progress-circle {
+    width: 80px;
+    height: 80px;
+    position: relative;
+  }
+
+  .progress-circle svg {
+    transform: rotate(-90deg);
+    width: 80px;
+    height: 80px;
+  }
+
+  .progress-circle .track {
+    fill: none;
+    stroke: var(--border-bright);
+    stroke-width: 5;
+  }
+
+  .progress-circle .fill {
+    fill: none;
+    stroke: url(#progressGrad);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .progress-circle .pct-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .progress-stats {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .progress-stats h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .progress-stats p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .overall-bar {
+    height: 4px;
+    background: var(--border-bright);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .overall-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--purple));
+    border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Phase */
+  .phase {
+    margin-bottom: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--surface);
+    transition: border-color 0.3s;
+  }
+
+  .phase:hover { border-color: var(--border-bright); }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 28px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+
+  .phase-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 28px;
+  }
+
+  .phase-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+  }
+
+  .phase-title-wrap {
+    flex: 1;
+  }
+
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+
+  .phase-period {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .phase-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .phase-bar {
+    width: 80px;
+    height: 3px;
+    background: var(--border-bright);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .phase-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+
+  .phase-pct {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 16px;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+
+  .phase.open .chevron { transform: rotate(180deg); }
+
+  .phase-accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px 0 0 2px;
+  }
+
+  /* Color themes */
+  .phase-teal .phase-accent { background: var(--teal); }
+  .phase-teal .phase-bar-fill { background: var(--teal); }
+  .phase-teal .phase-title { color: var(--teal); }
+
+  .phase-purple .phase-accent { background: var(--purple); }
+  .phase-purple .phase-bar-fill { background: var(--purple); }
+  .phase-purple .phase-title { color: var(--purple); }
+
+  .phase-coral .phase-accent { background: var(--coral); }
+  .phase-coral .phase-bar-fill { background: var(--coral); }
+  .phase-coral .phase-title { color: var(--coral); }
+
+  .phase-amber .phase-accent { background: var(--amber); }
+  .phase-amber .phase-bar-fill { background: var(--amber); }
+  .phase-amber .phase-title { color: var(--amber); }
+
+  /* Phase body */
+  .phase-body {
+    display: none;
+    padding: 0 28px 28px;
+    border-top: 1px solid var(--border);
+  }
+
+  .phase.open .phase-body { display: block; }
+
+  /* Section */
+  .section {
+    margin-top: 24px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Step item */
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+    margin-bottom: 6px;
+  }
+
+  .step-item:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border);
+  }
+
+  .step-item.done {
+    opacity: 0.55;
+  }
+
+  .step-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border-bright);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 11px;
+  }
+
+  .step-item.done .step-check {
+    border-color: transparent;
+    color: #fff;
+  }
+
+  .phase-teal .step-item.done .step-check { background: var(--teal); }
+  .phase-purple .step-item.done .step-check { background: var(--purple); }
+  .phase-coral .step-item.done .step-check { background: var(--coral); }
+  .phase-amber .step-item.done .step-check { background: var(--amber); }
+
+  .step-content { flex: 1; }
+
+  .step-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+
+  .step-item.done .step-title {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .step-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .step-tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 5px;
+  }
+
+  /* Resource list */
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .resource-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  .resource-card .r-type {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .resource-card .r-name {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Project card */
+  .project-card {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .project-card::before {
+    content: 'PROJE';
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .project-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .project-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .project-card ul {
+    margin-top: 10px;
+    padding-left: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* Reset button */
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 48px;
+    display: block;
+    margin-left: auto;
+  }
+  .reset-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+  /* Notice */
+  .save-notice {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 16px;
+    letter-spacing: 0.04em;
+  }
+
+  .save-notice span { color: var(--teal); }
+
+  @media (max-width: 600px) {
+    .phase-bar { display: none; }
+    .overall-progress { flex-direction: column; align-items: flex-start; gap: 16px; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="tag">1 Yıllık Program</div>
+    <h1>Yapay Zeka &<br><span>Veri Bilimi</span> Yolu</h1>
+    <p class="subtitle">Sıfırdan junior pozisyona. Her adımı tamamladığında işaretle — ilerleme tarayıcında kaydedilir.</p>
+  </header>
+
+  <!-- Overall Progress -->
+  <div class="overall-progress">
+    <div class="progress-circle-wrap">
+      <div class="progress-circle">
+        <svg viewBox="0 0 80 80">
+          <defs>
+            <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00d9a0"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="40" cy="40" r="35"/>
+          <circle class="fill" id="circFill" cx="40" cy="40" r="35"/>
+        </svg>
+        <div class="pct-text" id="circPct">0%</div>
+      </div>
+    </div>
+    <div class="progress-stats">
+      <h2>Genel İlerleme</h2>
+      <p id="progressSub">Henüz başlamadın — ilk adımı işaretle!</p>
+      <div class="overall-bar"><div class="overall-bar-fill" id="overallBar"></div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num" id="statDone">0</div>
+        <div class="stat-label">Tamamlandı</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="statTotal">0</div>
+        <div class="stat-label">Toplam Adım</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="statPhase">0/4</div>
+        <div class="stat-label">Faz</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASES -->
+  <div id="phases"></div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ İlerlemeyi sıfırla</button>
+  <p class="save-notice">İlerleme otomatik olarak tarayıcına kaydedilir. <span>localStorage</span> kullanılır.</p>
+</div>
+
+<script>
+const PHASES = [
+  {
+    id: 'p1',
+    color: 'teal',
+    icon: '🐍',
+    num: '01',
+    title: 'Python Temelleri',
+    period: 'Ay 1–3 · ~300 saat',
+    sections: [
+      {
+        label: 'Temel Python Sözdizimi',
+        steps: [
+          { id: 's1_1', title: 'Python kur ve ilk "Hello World" yaz', desc: 'Python 3.11+ indir, VS Code veya PyCharm kur. Terminalde python --version çalıştır.' },
+          { id: 's1_2', title: 'Değişkenler ve veri tipleri', desc: 'int, float, str, bool, None. type() fonksiyonu. Değişken isimlendirme kuralları.' },
+          { id: 's1_3', title: 'Koşullar: if / elif / else', desc: 'Mantıksal operatörler (and, or, not). Karşılaştırma operatörleri. Nested if blokları.' },
+          { id: 's1_4', title: 'Döngüler: for ve while', desc: 'range() fonksiyonu. break ve continue. Liste üzerinde döngü. Enumerate kullanımı.' },
+          { id: 's1_5', title: 'Fonksiyonlar (def)', desc: 'Parametre ve argüman farkı. return ifadesi. Default parametreler. *args ve **kwargs.' },
+          { id: 's1_6', title: 'Liste, tuple, dict, set', desc: 'Her veri yapısının ne zaman kullanılacağı. Dilimleme (slicing). Dict comprehension. List comprehension.' },
+          { id: 's1_7', title: 'Dosya okuma/yazma', desc: 'open(), read(), write(), with bloğu. CSV dosyası okuma. JSON parse etme.' },
+          { id: 's1_8', title: 'Hata yakalama: try / except', desc: 'Exception türleri. finally bloğu. Kendi hata sınıfını yazma.' },
+          { id: 's1_9', title: 'Nesne yönelimli programlama (OOP) giriş', desc: 'class tanımı. __init__ metodu. self. Kalıtım (inheritance) temelleri.' },
+        ]
+      },
+      {
+        label: 'NumPy — Sayısal Hesaplama',
+        steps: [
+          { id: 's1_10', title: 'NumPy array oluşturma', desc: 'np.array(), np.zeros(), np.ones(), np.arange(), np.linspace(). Shape ve dtype kavramları.' },
+          { id: 's1_11', title: 'Array işlemleri ve matematik', desc: 'Toplama, çıkarma, çarpma (element-wise). Broadcasting kuralı. np.sum(), np.mean(), np.std().' },
+          { id: 's1_12', title: 'İndeksleme ve dilimleme', desc: 'arr[0], arr[1:4], arr[:, 0]. Boolean masking. Fancy indexing.' },
+          { id: 's1_13', title: 'Şekil değiştirme (reshape, transpose)', desc: 'reshape(), flatten(), T özelliği. 2D matris işlemleri. np.dot() ile matris çarpımı.' },
+        ]
+      },
+      {
+        label: 'Pandas — Veri Analizi',
+        steps: [
+          { id: 's1_14', title: 'DataFrame ve Series oluşturma', desc: 'pd.DataFrame(), pd.read_csv(), pd.read_excel(). head(), tail(), info(), describe().' },
+          { id: 's1_15', title: 'Veri seçme ve filtreleme', desc: 'df["kolon"], df[["k1","k2"]], df.loc[], df.iloc[]. Boolean filtreleme.' },
+          { id: 's1_16', title: 'Eksik veri yönetimi', desc: 'isnull(), dropna(), fillna(). Eksik veri stratejileri: silme mi, doldurma mı?' },
+          { id: 's1_17', title: 'Gruplama ve agregasyon', desc: 'groupby(). agg() fonksiyonu. pivot_table(). apply() ile özel fonksiyon.' },
+          { id: 's1_18', title: 'Veri birleştirme', desc: 'merge() — SQL JOIN mantığı. concat(). join() metodları. Inner, outer, left, right.' },
+          { id: 's1_19', title: 'Veri temizleme pratiği', desc: 'Duplicate silme. Tip dönüşümleri. String temizleme. Gerçek kirli veriyle çalışma.' },
+        ]
+      },
+      {
+        label: 'Matplotlib & Seaborn — Görselleştirme',
+        steps: [
+          { id: 's1_20', title: 'Temel grafikler: çizgi, çubuk, pasta', desc: 'plt.plot(), plt.bar(), plt.pie(). Başlık, eksen etiketleri, legend ekleme.' },
+          { id: 's1_21', title: 'Histogram ve kutu grafiği', desc: 'Dağılımı görselleştirme. Outlier tespiti. Seaborn ile boxplot ve violinplot.' },
+          { id: 's1_22', title: 'Isı haritası ve korelasyon matrisi', desc: 'sns.heatmap(). Değişkenler arası ilişkiyi görme. Annotasyon ekleme.' },
+          { id: 's1_23', title: 'Çoklu grafik: subplot', desc: 'plt.subplots(). Figure ve axes. Grafikleri yan yana yerleştirme.' },
+        ]
+      },
+      {
+        label: '🎯 Faz 1 Projesi',
+        steps: [
+          { id: 's1_24', title: 'Proje: Türkiye Hava Kalitesi Analizi', desc: 'Kaggle\'dan gerçek hava kalitesi verisi indir. Pandas ile temizle. Hangi şehir en kirli? Mevsimsel değişim var mı? Seaborn ile 5 farklı grafik yap. Jupyter Notebook olarak kaydet.' },
+        ]
+      },
+      {
+        label: '📚 Kaynaklar',
+        isResources: true,
+        resources: [
+          { type: 'Kurs', name: 'CS50P — Harvard (Ücretsiz)' },
+          { type: 'Kitap', name: 'Python Crash Course (E. Matthes)' },
+          { type: 'Kurs', name: 'Kaggle Python Kursu (Ücretsiz)' },
+          { type: 'Platform', name: 'Exercism.io — Python egzersizleri' },
+          { type: 'Kurs', name: 'Kaggle Pandas Kursu (Ücretsiz)' },
+          { type: 'Dokümantasyon', name: 'NumPy Resmi Belgeler' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'p2',
+    color: 'purple',
+    icon: '🤖',
+    num: '02',
+    title: 'Makine Öğrenmesi',
+    period: 'Ay 4–6 · ~300 saat',
+    sections: [
+      {
+        label: 'ML Temel Kavramlar',
+        steps: [
+          { id: 's2_1', title: 'Makine öğrenmesi nedir?', desc: 'Supervised vs unsupervised vs reinforcement learning. Model nedir? Eğitim ve tahmin farkı.' },
+          { id: 's2_2', title: 'Eğitim / doğrulama / test ayrımı', desc: 'train_test_split(). Neden test seti saklıyoruz? Data leakage tehlikesi.' },
+          { id: 's2_3', title: 'Overfitting ve underfitting', desc: 'Bias-variance tradeoff. Öğrenme eğrisi (learning curve). Regularization kavramı.' },
+          { id: 's2_4', title: 'Değerlendirme metrikleri', desc: 'Regresyon: MAE, MSE, R². Sınıflandırma: accuracy, precision, recall, F1, ROC-AUC. Confusion matrix.' },
+          { id: 's2_5', title: 'Cross-validation', desc: 'K-Fold CV. StratifiedKFold. cross_val_score() kullanımı. Neden tek bir train/test yetmez?' },
+        ]
+      },
+      {
+        label: 'Scikit-learn ile Modeller',
+        steps: [
+          { id: 's2_6', title: 'Lineer ve lojistik regresyon', desc: 'LinearRegression(), LogisticRegression(). Katsayı yorumlama. Tahmin ve değerlendirme.' },
+          { id: 's2_7', title: 'Karar ağaçları (Decision Tree)', desc: 'DecisionTreeClassifier/Regressor. max_depth parametresi. Ağaç görselleştirme.' },
+          { id: 's2_8', title: 'Random Forest ve Gradient Boosting', desc: 'Ensemble yöntemi nedir? RandomForestClassifier. XGBoost ve LightGBM kurulumu ve kullanımı.' },
+          { id: 's2_9', title: 'K-means kümeleme', desc: 'Unsupervised learning. Elbow yöntemi. Küme görselleştirme. Gerçek veri uygulaması.' },
+          { id: 's2_10', title: 'Özellik mühendisliği (Feature Engineering)', desc: 'Scaling: StandardScaler, MinMaxScaler. Encoding: OneHotEncoder, LabelEncoder. Yeni özellik türetme.' },
+          { id: 's2_11', title: 'Pipeline kurma', desc: 'sklearn Pipeline. ColumnTransformer. Preprocessing + model birleştirme. Kod tekrarını önleme.' },
+          { id: 's2_12', title: 'Hiperparametre optimizasyonu', desc: 'GridSearchCV. RandomizedSearchCV. En iyi parametreyi bulma. Scoring metrikleri.' },
+        ]
+      },
+      {
+        label: 'Veri Bilimi Pratikleri',
+        steps: [
+          { id: 's2_13', title: 'Keşifsel Veri Analizi (EDA)', desc: 'Veriyi her açıdan inceleme metodolojisi. Profiling araçları: ydata-profiling. İş sorusu belirleme.' },
+          { id: 's2_14', title: 'Kaggle\'a ilk katılım: Titanic', desc: 'Kaggle Titanic yarışması. Başlangıç notebook\'u incele. Kendi modelini oluştur. Submit et.' },
+          { id: 's2_15', title: 'Özellik önemi (Feature Importance)', desc: 'Hangi değişken modele en çok katkı sağlıyor? SHAP değerleri giriş. Gereksiz özellik çıkarma.' },
+          { id: 's2_16', title: 'Model kaydetme ve yükleme', desc: 'joblib veya pickle ile model serialize etme. Eğitilmiş modeli başka bir script\'te kullanma.' },
+        ]
+      },
+      {
+        label: '🎯 Faz 2 Projesi',
+        steps: [
+          { id: 's2_17', title: 'Proje: Ev Fiyatı Tahmin Modeli', desc: 'Kaggle House Prices veri setini kullan. EDA yap, görselleştir. 3+ farklı model dene. En iyisini seç. Cross-validation ile güven aralığı hesapla. Kaggle\'a submit et ve skor al. GitHub\'a yükle.' },
+        ]
+      },
+      {
+        label: '📚 Kaynaklar',
+        isResources: true,
+        resources: [
+          { type: 'Kurs', name: 'Kaggle ML Intro Kursu (Ücretsiz)' },
+          { type: 'Kurs', name: 'Kaggle Intermediate ML (Ücretsiz)' },
+          { type: 'Kitap', name: 'Hands-On ML (Géron) — Ch. 1–9' },
+          { type: 'Platform', name: 'Kaggle Notebooks — başkalarından öğren' },
+          { type: 'Araç', name: 'scikit-learn Resmi Belgeler' },
+          { type: 'Kurs', name: 'Fast.ai Practical Deep Learning' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'p3',
+    color: 'coral',
+    icon: '🧠',
+    num: '03',
+    title: 'Derin Öğrenme & YZ',
+    period: 'Ay 7–9 · ~300 saat',
+    sections: [
+      {
+        label: 'Sinir Ağı Temelleri',
+        steps: [
+          { id: 's3_1', title: 'Yapay sinir ağı nasıl çalışır?', desc: 'Nöron, ağırlık, bias, aktivasyon fonksiyonu. Forward propagation adım adım. Loss hesaplama.' },
+          { id: 's3_2', title: 'Backpropagation ve optimizasyon', desc: 'Gradient descent. SGD, Adam, RMSprop. Learning rate seçimi. Momentum kavramı.' },
+          { id: 's3_3', title: 'Aktivasyon fonksiyonları', desc: 'ReLU, Sigmoid, Tanh, Softmax. Hangi katmanda hangisi kullanılır? Vanishing gradient problemi.' },
+          { id: 's3_4', title: 'Regularization teknikleri', desc: 'Dropout. Batch normalization. Early stopping. L1/L2 regularization. Data augmentation.' },
+        ]
+      },
+      {
+        label: 'PyTorch ile Derin Öğrenme',
+        steps: [
+          { id: 's3_5', title: 'PyTorch temelleri: Tensor işlemleri', desc: 'torch.tensor(). GPU\'ya taşıma (.cuda()). Autograd ile otomatik türev. torch.nn modülü.' },
+          { id: 's3_6', title: 'İlk sinir ağını PyTorch\'ta kur', desc: 'nn.Linear, nn.ReLU, nn.Sequential. DataLoader ve Dataset. Eğitim döngüsü yazma.' },
+          { id: 's3_7', title: 'CNN — Evrişimli Sinir Ağları', desc: 'Konvolüsyon operasyonu. MaxPooling. CNN mimarisi: VGG, ResNet. Transfer learning ile fine-tuning.' },
+          { id: 's3_8', title: 'Proje: Kedi-Köpek Sınıflandırıcı', desc: 'Kaggle Cats vs Dogs verisi. Pretrained ResNet18 kullan. Fine-tune et. %90+ accuracy hedefle.' },
+          { id: 's3_9', title: 'RNN ve LSTM giriş', desc: 'Sequence verisi nedir? Zaman serisi tahmin. Dil modelleme temeli. Vanishing gradient çözümü.' },
+        ]
+      },
+      {
+        label: 'Doğal Dil İşleme (NLP)',
+        steps: [
+          { id: 's3_10', title: 'Metin ön işleme', desc: 'Tokenization. Stemming ve lemmatization. Stop words. TF-IDF. Bag of Words modeli.' },
+          { id: 's3_11', title: 'Word embeddings', desc: 'Word2Vec, GloVe kavramı. Kelimeleri vektöre dönüştürme. Anlam benzerliği ölçme.' },
+          { id: 's3_12', title: 'Transformer mimarisi anlama', desc: 'Attention mekanizması nedir? Self-attention. BERT mimarisi genel bakış. Encoder-decoder yapısı.' },
+          { id: 's3_13', title: 'Hugging Face kullanımı', desc: 'pipeline() ile hızlı NLP. Pretrained model yükleme. Tokenizer. Fine-tuning kendi verinle.' },
+          { id: 's3_14', title: 'Proje: Türkçe Duygu Analizi', desc: 'Twitter/sosyal medya verisi topla. Hugging Face\'den Türkçe BERT modeli kullan. Fine-tune et. Web arayüzü ekle.' },
+        ]
+      },
+      {
+        label: 'Üretken YZ Temelleri',
+        steps: [
+          { id: 's3_15', title: 'Büyük dil modelleri (LLM) nedir?', desc: 'GPT ailesinin çalışma mantığı. In-context learning. Prompt engineering temelleri.' },
+          { id: 's3_16', title: 'OpenAI / Anthropic API kullanımı', desc: 'API key alma. Chat completion çağrısı. System prompt. Token yönetimi. Maliyet hesaplama.' },
+          { id: 's3_17', title: 'RAG (Retrieval Augmented Generation)', desc: 'Vektör veritabanı nedir? Embedding + arama + üretim pipeline\'ı. LangChain veya LlamaIndex giriş.' },
+        ]
+      },
+      {
+        label: '📚 Kaynaklar',
+        isResources: true,
+        resources: [
+          { type: 'Kurs', name: 'Fast.ai — Practical Deep Learning' },
+          { type: 'Kurs', name: 'Andrej Karpathy — Neural Networks (YouTube)' },
+          { type: 'Kurs', name: 'DeepLearning.AI Specialization' },
+          { type: 'Platform', name: 'Hugging Face — NLP Kursu (Ücretsiz)' },
+          { type: 'Kitap', name: 'Deep Learning with PyTorch (Stevens)' },
+          { type: 'Kurs', name: 'CS224N — Stanford NLP (YouTube)' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'p4',
+    color: 'amber',
+    icon: '🚀',
+    num: '04',
+    title: 'Portfolyo & İş',
+    period: 'Ay 10–12 · ~300 saat',
+    sections: [
+      {
+        label: 'GitHub Portfolyosu',
+        steps: [
+          { id: 's4_1', title: 'GitHub profilini optimize et', desc: 'Profil README oluştur. Pinned repositories seç. Kısa bio yaz. E-posta ve LinkedIn bağla.' },
+          { id: 's4_2', title: 'Her proje için README hazırla', desc: 'Proje açıklaması, kurulum talimatları, kullanım örneği, sonuçlar, ekran görüntüleri. Badge ekle.' },
+          { id: 's4_3', title: 'Kod kalitesini artır', desc: 'Black ile kod formatlama. Docstring yaz. Requirements.txt. .gitignore düzenle. Temiz commit mesajları.' },
+          { id: 's4_4', title: 'Jupyter Notebook\'larını temizle', desc: 'Her hücreyi yeniden çalıştır. Yorumlar ekle. Markdown açıklamaları. Grafiklerin görünür olduğundan emin ol.' },
+        ]
+      },
+      {
+        label: 'Final Projesi: Gerçek Dünya Uygulaması',
+        steps: [
+          { id: 's4_5', title: 'Problem seç ve tanımla', desc: 'Seni gerçekten ilgilendiren bir alan. Sağlık, finans, spor, tarım, eğitim. Problem ne? Veri var mı?' },
+          { id: 's4_6', title: 'Veri topla ve hazırla', desc: 'Web scraping, API, Kaggle veya açık veri. Temizle, keşfet, dönüştür. EDA yap.' },
+          { id: 's4_7', title: 'Model geliştir ve optimize et', desc: 'Birden fazla model dene. Hyperparameter tuning. Cross-validation. En iyi modeli seç. Yorumla.' },
+          { id: 's4_8', title: 'Streamlit ile web uygulaması yap', desc: 'pip install streamlit. Model yükle. Kullanıcı girişi al. Tahmin göster. Grafik ekle. Çalıştır.' },
+          { id: 's4_9', title: 'Uygulamayı deploy et', desc: 'Streamlit Cloud ile ücretsiz deploy. Herkes erişebilsin. Linki LinkedIn\'de paylaş.' },
+          { id: 's4_10', title: 'Proje sunumu hazırla', desc: '5 dakikalık anlatım. Problem, veri, model, sonuçlar, geliştirilecekler. Mülakatta anlatabilecek halde ol.' },
+        ]
+      },
+      {
+        label: 'İş Başvurusu',
+        steps: [
+          { id: 's4_11', title: 'CV hazırla', desc: 'Türkçe ve İngilizce. Projeler bölümü. GitHub linki. Teknik beceriler: Python, Pandas, Scikit-learn, PyTorch. ATS uyumlu format.' },
+          { id: 's4_12', title: 'LinkedIn profilini düzenle', desc: 'Başlık: "Veri Bilimi Stajyeri / Junior Data Scientist". Öne çıkan projeler ekle. 500+ bağlantı hedefle.' },
+          { id: 's4_13', title: 'Kaggle profilini güçlendir', desc: 'En az 3 yarışmaya katıl. Notebook Expert rozetini hedefle. Profilini paylaşılabilir yap.' },
+          { id: 's4_14', title: 'Mülakat hazırlığı: teknik', desc: 'Python soruları (LeetCode Easy). ML kavramları (bias-variance, overfitting, metrikler). SQL temelleri.' },
+          { id: 's4_15', title: 'Mülakat hazırlığı: davranışsal', desc: 'STAR metodu. "Projenizi anlatın" sorusunun cevabı. Neden bu alan? 5 yıl sonra nerede? Mock mülakat.' },
+          { id: 's4_16', title: 'Başvurular başlat', desc: 'Kariyer.net, LinkedIn Jobs, Glassdoor. Türk tech şirketleri: Getir, Trendyol, Peak, Insider. Freelance: Upwork. Her hafta 5+ başvuru.' },
+        ]
+      },
+      {
+        label: 'Sürekli Öğrenme',
+        steps: [
+          { id: 's4_17', title: 'ArXiv / Papers with Code takibi', desc: 'Haftada 1 makale oku. Özetini not al. Büyük model çıkışlarını takip et. Twitter/X\'te araştırmacıları takip et.' },
+          { id: 's4_18', title: 'Topluluk ve ağ kurma', desc: 'Kaggle forumları. Hugging Face Discord. Türkiye\'deki ML toplulukları (MLTR). Meetup\'lara git.' },
+          { id: 's4_19', title: 'Sertifika (opsiyonel ama faydalı)', desc: 'Google Professional ML Engineer. AWS ML Specialty. DeepLearning.AI sertifikaları. TensorFlow Developer.' },
+        ]
+      },
+      {
+        label: '📚 Kaynaklar',
+        isResources: true,
+        resources: [
+          { type: 'Platform', name: 'Streamlit Docs — web app kurma' },
+          { type: 'Platform', name: 'Kaggle Competitions — yarışmalar' },
+          { type: 'Platform', name: 'LeetCode — Python kodlama soruları' },
+          { type: 'Kurs', name: 'ML System Design (ücretsiz kaynaklar)' },
+          { type: 'Kitap', name: 'Designing ML Systems (Chip Huyen)' },
+          { type: 'Platform', name: 'Papers with Code — son araştırmalar' },
+        ]
+      }
+    ]
+  }
+];
+
+// Storage
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem('ai_roadmap_v1') || '{}'); } catch { return {}; }
+}
+function saveProgress(data) {
+  localStorage.setItem('ai_roadmap_v1', JSON.stringify(data));
+}
+function resetAll() {
+  if (!confirm('Tüm ilerleme silinecek. Emin misin?')) return;
+  localStorage.removeItem('ai_roadmap_v1');
+  location.reload();
+}
+
+let progress = loadProgress();
+
+function isStepDone(id) { return !!progress[id]; }
+function toggleStep(id) {
+  if (progress[id]) delete progress[id];
+  else progress[id] = Date.now();
+  saveProgress(progress);
+  updateAll();
+}
+
+// Render
+function render() {
+  const container = document.getElementById('phases');
+  container.innerHTML = '';
+  PHASES.forEach(phase => {
+    const el = document.createElement('div');
+    el.className = `phase phase-${phase.color}`;
+    el.id = phase.id;
+
+    // Count steps for this phase
+    let total = 0, done = 0;
+    phase.sections.forEach(sec => {
+      if (sec.steps) sec.steps.forEach(s => { total++; if (isStepDone(s.id)) done++; });
+    });
+    const pct = total ? Math.round(done / total * 100) : 0;
+
+    el.innerHTML = `
+      <div class="phase-header" onclick="togglePhase('${phase.id}')">
+        <div class="phase-accent"></div>
+        <span class="phase-number">${phase.num}</span>
+        <span class="phase-icon">${phase.icon}</span>
+        <div class="phase-title-wrap">
+          <div class="phase-title">${phase.title}</div>
+          <div class="phase-period">${phase.period}</div>
+        </div>
+        <div class="phase-bar-wrap">
+          <div class="phase-bar"><div class="phase-bar-fill" style="width:${pct}%"></div></div>
+          <span class="phase-pct">${pct}%</span>
+        </div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-body">
+        ${phase.sections.map(sec => renderSection(sec, phase.color)).join('')}
+      </div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+function renderSection(sec, color) {
+  if (sec.isResources) {
+    return `
+      <div class="section">
+        <div class="section-label">${sec.label}</div>
+        <div class="resource-grid">
+          ${sec.resources.map(r => `
+            <div class="resource-card">
+              <div class="r-type">${r.type}</div>
+              <div class="r-name">${r.name}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="section">
+      <div class="section-label">${sec.label}</div>
+      ${sec.steps.map(step => {
+        const done = isStepDone(step.id);
+        return `
+          <div class="step-item ${done ? 'done' : ''}" onclick="toggleStep('${step.id}')">
+            <div class="step-check">${done ? '✓' : ''}</div>
+            <div class="step-content">
+              <div class="step-title">${step.title}</div>
+              <div class="step-desc">${step.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function togglePhase(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function updateAll() {
+  // Count all steps
+  let total = 0, done = 0;
+  let phasesDone = 0;
+  PHASES.forEach(phase => {
+    let pTotal = 0, pDone = 0;
+    phase.sections.forEach(sec => {
+      if (sec.steps) sec.steps.forEach(s => {
+        total++; pTotal++;
+        if (isStepDone(s.id)) { done++; pDone++; }
+      });
+    });
+    if (pDone === pTotal && pTotal > 0) phasesDone++;
+    // Update phase bar
+    const pct = pTotal ? Math.round(pDone / pTotal * 100) : 0;
+    const phaseEl = document.getElementById(phase.id);
+    if (phaseEl) {
+      phaseEl.querySelector('.phase-bar-fill').style.width = pct + '%';
+      phaseEl.querySelector('.phase-pct').textContent = pct + '%';
+    }
+    // Re-render steps inside open phases
+    if (phaseEl && phaseEl.classList.contains('open')) {
+      phaseEl.querySelector('.phase-body').innerHTML = phase.sections.map(sec => renderSection(sec, phase.color)).join('');
+    }
+  });
+
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const circ = 220; // 2 * pi * 35
+  document.getElementById('circFill').style.strokeDashoffset = circ - (circ * pct / 100);
+  document.getElementById('circPct').textContent = pct + '%';
+  document.getElementById('overallBar').style.width = pct + '%';
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPhase').textContent = phasesDone + '/4';
+
+  const subs = [
+    'Henüz başlamadın — ilk adımı işaretle!',
+    'Güzel başlangıç! Devam et.',
+    'Harika gidiyorsun!',
+    'Yarıya yaklaştın 💪',
+    'Yarıyı geçtin, harika!',
+    'Çok iyi! Hedefe yaklaşıyorsun.',
+    'Az kaldı! Son sürat!',
+    'Neredeyse bitti! İnanılmaz!',
+    '🎉 Tamamladın! Junior Data Scientist!'
+  ];
+  const subIdx = Math.floor(pct / 12.5);
+  document.getElementById('progressSub').textContent = subs[Math.min(subIdx, subs.length - 1)];
+}
+
+// Init
+render();
+updateAll();
+
+// Open first phase by default if no progress
+if (Object.keys(progress).length === 0) {
+  document.getElementById('p1').classList.add('open');
+}
+</script>
+</body>
+</html>
