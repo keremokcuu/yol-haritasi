@@ -1,1 +1,1 @@
-# yol-haritasi
+# yapay-zeka-yol-haritasi.html
